@@ -18,6 +18,7 @@ if(NOT CMAKE_BUILD_EARLY_EXPANSION)
     )
 
     add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/CMakeFiles/venv_requirements.stamp
+        COMMAND ${Python3_VENV} -mpip install wheel --upgrade
         COMMAND ${Python3_VENV} -mpip install -r ${frogfs_DIR}/requirements.txt --upgrade
         COMMAND ${CMAKE_COMMAND} -E touch ${PROJECT_BINARY_DIR}/CMakeFiles/venv_requirements.stamp
         DEPENDS ${PROJECT_BINARY_DIR}/CMakeFiles/venv.stamp ${frogfs_DIR}/requirements.txt
