@@ -16,6 +16,7 @@ set(frogfs_IDF_SRC
 
 set(frogfs_IDF_PRIV_REQ
    spi_flash
+   vfs
 )
 
 set(frogfs_cwhttpd_SRC
