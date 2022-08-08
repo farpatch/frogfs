@@ -220,18 +220,25 @@ def build_state(src_dir):
 def install_preprocessors(config, root_dir):
     global used_preprocessors
 
+    # Work around a bug in npm -- if `node_modules` doesn't exist it will
+    # create one at some random path above. Sometimes. Depending on the version.
+    # Except on Tuesdays in Norway.
+    node_modules = os.path.join(root_dir.replace('/', os.path.sep), 'node_modules')
+    if not os.path.exists(node_modules):
+        os.mkdir(node_modules)
+
     for name in used_preprocessors:
         preprocessor = config['preprocessors'][name]
         if 'install' in preprocessor:
             install = preprocessor['install']
-            subprocess.check_call(install, shell=True)
+            subprocess.check_call(install, shell=True, cwd=root_dir)
         elif 'npm' in preprocessor:
             for npm in preprocessor['npm']:
                 test_path = os.path.join(root_dir.replace('/', os.path.sep),
                                          'node_modules',
                                          npm.replace('/', os.path.sep))
                 if not os.path.exists(test_path):
-                    subprocess.check_call(f'npm install {npm}', shell=True)
+                    subprocess.check_call(f'npm install {npm}', shell=True, cwd=root_dir)
 
 def preprocess(path, preprocessors):
     global config
@@ -280,6 +287,7 @@ def main():
     old_state = load_state(args.dst_dir)
     new_state = build_state(args.src_dir)
 
+    print(f"Root: {args.root}")
     install_preprocessors(config, args.root)
 
     old_paths = SortedSet(old_state.keys())
