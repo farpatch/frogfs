@@ -1,6 +1,8 @@
 include(${CMAKE_CURRENT_LIST_DIR}/files.cmake)
 
 idf_component_register(
+REQUIRES
+    esp_partition
 SRCS
     ${frogfs_SRC}
     ${frogfs_IDF_SRC}
