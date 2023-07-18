@@ -20,19 +20,14 @@ def load_config(user_config_file=None):
     defaults_file = os.path.join(script_dir, '..', 'frogfs_defaults.json')
     with open(defaults_file) as f:
         config = json.load(f)
-        print("Default config:")
-        print(str(config))
 
     user_config = OrderedDict()
     if user_config_file:
         if not os.path.exists(user_config_file):
             print('{user_config_file} cannot be opened', file=sys.stderr)
             sys.exit(1)
-        print("Loading user config file")
         with open(user_config_file) as f:
             user_config = json.load(f)
-            print("User config:")
-            print(str(user_config))
     else:
         print("Not loading user config file")
 
@@ -44,6 +39,8 @@ def load_config(user_config_file=None):
                         del config[sec_name][subsec_name]
                 else:
                     if sec_name == 'filters':
+                        if subsec_name not in config[sec_name]:
+                            config[sec_name] = []
                         if isinstance(config[sec_name][subsec_name], str):
                             config[sec_name][subsec_name] = \
                                     [config[sec_name][subsec_name]]
@@ -62,7 +59,6 @@ def load_config(user_config_file=None):
                 for subsubsec_name, subsubsec in subsec.items():
                     if isinstance(subsubsec, str):
                         subsec[subsubsec_name] = [subsubsec]
-    print(f"Merged config: {json.dumps(config)}")
 
     class pattern_sort:
         def __init__(self, path, *args):
