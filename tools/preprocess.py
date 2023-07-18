@@ -2,6 +2,7 @@
 
 import csv
 from configparser import ConfigParser
+import json
 import os
 import shutil
 import subprocess
@@ -10,42 +11,39 @@ from argparse import ArgumentParser
 from collections import OrderedDict
 from fnmatch import fnmatch
 
-from hiyapyco import odyldo
-from sortedcontainers import SortedDict, SortedSet
-
 script_dir = os.path.dirname(os.path.realpath(__file__))
 used_preprocessors = set()
 
 def load_config(user_config_file=None):
     global config
 
-    defaults_file = os.path.join(script_dir, '..', 'frogfs_defaults.yaml')
+    defaults_file = os.path.join(script_dir, '..', 'frogfs_defaults.json')
     with open(defaults_file) as f:
-        config = list(odyldo.safe_load_all(f))[0]
+        config = json.load(f)
+        print("Default config:")
+        print(str(config))
 
     user_config = OrderedDict()
     if user_config_file:
         if not os.path.exists(user_config_file):
             print('{user_config_file} cannot be opened', file=sys.stderr)
             sys.exit(1)
+        print("Loading user config file")
         with open(user_config_file) as f:
-            user_list = list(odyldo.yaml.safe_load_all(f))
-        if user_list:
-            user_config = user_list[0]
+            user_config = json.load(f)
+            print("User config:")
+            print(str(user_config))
+    else:
+        print("Not loading user config file")
 
     def merge_section(sec_name):
-        sec = user_config.get(sec_name, OrderedDict())
-        if sec is None:
-            if sec_name in config:
-                del config[sec_name]
-        else:
-            for subsec_name, subsec in sec.items():
+        if sec_name in user_config:
+            for subsec_name, subsec in user_config[sec_name].items():
                 if subsec is None:
                     if subsec_name in config[sec_name]:
                         del config[sec_name][subsec_name]
                 else:
                     if sec_name == 'filters':
-                        sec = config[sec_name].setdefault(subsec_name, [])
                         if isinstance(config[sec_name][subsec_name], str):
                             config[sec_name][subsec_name] = \
                                     [config[sec_name][subsec_name]]
@@ -64,6 +62,7 @@ def load_config(user_config_file=None):
                 for subsubsec_name, subsubsec in subsec.items():
                     if isinstance(subsubsec, str):
                         subsec[subsubsec_name] = [subsubsec]
+    print(f"Merged config: {json.dumps(config)}")
 
     class pattern_sort:
         def __init__(self, path, *args):
@@ -152,7 +151,7 @@ def get_compressor(path):
     return compressor
 
 def load_state(dst_dir):
-    state = SortedDict()
+    state = dict()
     state_file = os.path.join(dst_dir, '.state')
     if os.path.exists(state_file):
         with open(state_file, newline='') as f:
@@ -191,7 +190,7 @@ def save_state(dst_dir, state):
         dotconfig.write(f)
 
 def build_state(src_dir):
-    state = SortedDict()
+    state = dict()
     for dir, _, files in os.walk(src_dir, followlinks=True):
         reldir = os.path.relpath(dir, src_dir).replace('\\', '/').lstrip('.') \
                 .lstrip('/')
@@ -246,7 +245,10 @@ def preprocess(path, preprocessors):
     src_abs = os.path.join(args.src_dir, path)
     dst_abs = os.path.join(args.dst_dir, path)
     if os.path.isdir(src_abs):
-        os.mkdir(dst_abs)
+        if os.path.isdir(dst_abs):
+            pass
+        else:
+            os.mkdir(dst_abs)
     else:
         os.makedirs(os.path.dirname(dst_abs), exist_ok=True)
 
@@ -290,8 +292,8 @@ def main():
     print(f"Root: {args.root}")
     install_preprocessors(config, args.root)
 
-    old_paths = SortedSet(old_state.keys())
-    new_paths = SortedSet(new_state.keys())
+    old_paths = set(old_state.keys())
+    new_paths = set(new_state.keys())
 
     delete_paths = old_paths - new_paths
     copy_paths = new_paths - old_paths

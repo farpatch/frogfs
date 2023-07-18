@@ -37,7 +37,7 @@ images in your binary.
 ### Embedding a FrogFS image
 
 ```cmake
-target_add_frogfs(target path [NAME name] [CONFIG yaml])
+target_add_frogfs(target path [NAME name] [CONFIG json])
 ```
 
 Symbols will be named **name** or if not specified, the last path part of
@@ -52,11 +52,11 @@ include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(my_project)
 
 include(components/frogfs/cmake/functions.cmake)
-target_add_frogfs(my_project.elf html NAME frogfs CONFIG frogfs.yaml)
+target_add_frogfs(my_project.elf html NAME frogfs CONFIG frogfs.json)
 ```
 
 Where **html** is the path and name of the directory containing the root to
-use, **frogfs** is the name of the symbol to use, and **frogfs.yaml** is the
+use, **frogfs** is the name of the symbol to use, and **frogfs.json** is the
 configuration overrides. In C this results in these two symbols being defined:
 
 ```C
@@ -72,14 +72,14 @@ target `generate_${name}`. If **name** is not specified, the last path part of
 **path** is used:
 
 ```cmake
-declare_frogfs_bin(path [NAME name] [CONFIG yaml])
+declare_frogfs_bin(path [NAME name] [CONFIG json])
 ```
 
 Again, for ESP-IDF, in your project main's CMakeLists.txt:
 
 ```cmake
 set(name frogfs)
-declare_frogfs_bin(../html NAME ${name} CONFIG ../frogfs.yaml)
+declare_frogfs_bin(../html NAME ${name} CONFIG ../frogfs.json)
 idf_component_get_property(main_args esptool_py FLASH_ARGS)
 idf_component_get_property(sub_args esptool_py FLASH_SUB_ARGS)
 esptool_py_flash_target(${name}-flash "${main_args}" "${sub_args}" ALWAYS_PLAINTEXT)
@@ -89,22 +89,28 @@ add_dependencies(${name}-flash generate_${name})
 
 In this case, **../html** is the directory to build from, **${name}** is the
 name of the binary name (without the .bin) and **frogfs.bin** and
-**frogfs.yaml** is the configuration overrides.
+**frogfs.json** is the configuration overrides.
 
 
 ### Configuration
 
-In the root of `frogfs` There is a `frogfs_defaults.yaml` file that has sane
-defaults for HTTP usage. The yaml file defines filters for the various actions
+In the root of `frogfs` There is a `frogfs_defaults.json` file that has sane
+defaults for HTTP usage. The json file defines filters for the various actions
 -- preprocessors and compressors -- to run before building the FrogFS image.
 The **config** file settings can enable or disable rules with wildcard matches
 or absolute matches. For example:
 
-```yaml
-filters:
-    "index.html": no-html-minifier
-    "*.html": gzip
-    "*.txt": [zeroify, uncompressed]
+```json
+{
+    "filters": {
+        "index.html": "no-html-minifier",
+        "*.html": "gzip",
+        "*.txt": [
+            "zeroify",
+            "uncompressed"
+        ]
+    }
+}
 ```
 
 All preprocessors can be prefixed with `no-` to skip the preprocessor for that
@@ -119,7 +125,7 @@ just a flag that is used to tell the browser that it should cache the file
 instead of re-downloading it the next visit. Discard means leave the specified
 files out of the FrogFS image. And finally zeroify null terminates data.
 
-You can define your own preprocessors. Look at the config_default.yaml within
+You can define your own preprocessors. Look at the config_default.json within
 frogfs for an example. Preprocessors must take data on stdin and produce data
 on stdout. Installation of preprocessors can be done with the **install**
 key or using the **npm** key for node.js.

@@ -10,9 +10,6 @@ from struct import Struct
 from zlib import crc32
 
 import heatshrink2
-from hiyapyco import odyldo
-from sortedcontainers import SortedDict
-
 
 frogfs_fs_header_t = Struct('<IBBHIHH')
 # magic, len, version_major, version_minor, binary_len, num_objects, reserved
@@ -51,7 +48,7 @@ def djb2_hash(s):
     return hash
 
 def load_state(path):
-    state = SortedDict()
+    state = dict()
     state_file = os.path.join(args.src_dir, '.state')
     with open(state_file, newline='') as f:
         index = 0
