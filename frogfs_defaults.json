@@ -2,8 +2,8 @@
     "preprocessors": {
         "babel-convert": {
             "npm": [
-                "@babel/core",
-                "babel-cli",
+                "@babel/core@^7.0.0",
+                "@babel/cli",
                 "@babel/preset-env"
             ],
             "command": "npx babel --no-babelrc --presets @babel/preset-env"
