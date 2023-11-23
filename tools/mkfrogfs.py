@@ -67,7 +67,7 @@ def load_state(path):
             }
             index += 1
 
-    return state
+    return dict(sorted(state.items()))
 
 def make_dir_object(item):
     print(f'{item[0][0]:08x} {item[0][1]:<34s} dir')
