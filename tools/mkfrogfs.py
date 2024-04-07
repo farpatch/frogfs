@@ -54,7 +54,7 @@ def load_state(path):
         index = 0
         reader = csv.reader(f, quoting=csv.QUOTE_NONNUMERIC)
         for data in reader:
-            path, type, _, flags, _, compressor = data
+            path, type, _, flags, compressor = data
             hash = djb2_hash(path)
             flags = () if not flags else tuple(flags.split(','))
             if 'discard' in flags:

@@ -12,19 +12,19 @@ from collections import OrderedDict
 from fnmatch import fnmatch
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-used_preprocessors = set()
+
 
 def load_config(user_config_file=None):
     global config
 
-    defaults_file = os.path.join(script_dir, '..', 'frogfs_defaults.json')
+    defaults_file = os.path.join(script_dir, "..", "frogfs_defaults.json")
     with open(defaults_file) as f:
         config = json.load(f)
 
     user_config = OrderedDict()
     if user_config_file:
         if not os.path.exists(user_config_file):
-            print('{user_config_file} cannot be opened', file=sys.stderr)
+            print("{user_config_file} cannot be opened", file=sys.stderr)
             sys.exit(1)
         with open(user_config_file) as f:
             user_config = json.load(f)
@@ -38,19 +38,20 @@ def load_config(user_config_file=None):
                     if subsec_name in config[sec_name]:
                         del config[sec_name][subsec_name]
                 else:
-                    if sec_name == 'filters':
+                    if sec_name == "filters":
                         if subsec_name not in config[sec_name]:
                             config[sec_name] = []
                         if isinstance(config[sec_name][subsec_name], str):
-                            config[sec_name][subsec_name] = \
-                                    [config[sec_name][subsec_name]]
+                            config[sec_name][subsec_name] = [
+                                config[sec_name][subsec_name]
+                            ]
                         if isinstance(subsec, str):
                             subsec = [subsec]
                         config[sec_name][subsec_name] += subsec
                     else:
                         config[sec_name][subsec_name] = subsec
 
-    for sec_name in ('preprocessors', 'compressors', 'filters'):
+    for sec_name in ("compressors", "filters"):
         merge_section(sec_name)
         for subsec_name, subsec in config.get(sec_name, OrderedDict()).items():
             if isinstance(subsec, str):
@@ -65,177 +66,132 @@ def load_config(user_config_file=None):
             self.pattern, _ = path
 
         def __lt__(self, other):
-            if self.pattern == '*':
+            if self.pattern == "*":
                 return False
-            if other.pattern == '*':
+            if other.pattern == "*":
                 return True
-            if self.pattern.startswith('*') and \
-                    not other.pattern.startswith('*'):
+            if self.pattern.startswith("*") and not other.pattern.startswith("*"):
                 return False
-            if not self.pattern.startswith('*') and \
-                    other.pattern.startswith('*'):
+            if not self.pattern.startswith("*") and other.pattern.startswith("*"):
                 return True
             return self.pattern < other.pattern
 
-    config['filters'] = OrderedDict(sorted(config['filters'].items(),
-            key = pattern_sort))
+    config["filters"] = OrderedDict(sorted(config["filters"].items(), key=pattern_sort))
 
-    preprocessors = list(config['preprocessors'].keys())
     actions = list()
-    for action in preprocessors + ['cache', 'discard']:
+    for action in ["cache", "discard"]:
         actions.append(action)
-        actions.append('no-' + action)
-    actions += ['skip-preprocessing', 'gzip', 'heatshrink', 'uncompressed']
-    config['actions'] = actions
+        actions.append("no-" + action)
+    actions += ["skip-preprocessing", "gzip", "heatshrink", "uncompressed"]
+    config["actions"] = actions
 
-    for filter, actions in config['filters'].items():
+    for filter, actions in config["filters"].items():
         for action in actions:
-            if action not in config['actions']:
-                print(f"Unknown action `{action}' for filter `{filter}'",
-                        file=sys.stderr)
+            if action not in config["actions"]:
+                print(
+                    f"Unknown action `{action}' for filter `{filter}'", file=sys.stderr
+                )
                 sys.exit(1)
 
-def get_preprocessors(path):
-    global config, used_preprocessors
-
-    preprocessors = OrderedDict()
-    for pattern, actions in config['filters'].items():
-        if fnmatch(path, pattern):
-            for action in actions:
-                enable = not action.startswith('no-')
-                if not enable:
-                    action = action[3:]
-                if action in config['preprocessors']:
-                    if enable:
-                        preprocessors[action] = None
-                        used_preprocessors.add(action)
-                    else:
-                        try:
-                            del preprocessors[action]
-                        except:
-                            pass
-                    preprocessors[action] = enable
-        if 'skip-preprocessing' in actions:
-            return ()
-
-    return tuple(preprocessors)
 
 def get_flags(path):
     global config
 
     flags = OrderedDict()
-    for pattern, actions in config['filters'].items():
+    for pattern, actions in config["filters"].items():
         if fnmatch(path, pattern):
             for action in actions:
-                enable = not action.startswith('no-')
+                enable = not action.startswith("no-")
                 if not enable:
                     action = action[3:]
-                if action in ('cache', 'discard', 'skip'):
+                if action in ("cache", "discard", "skip"):
                     flags[action] = enable
 
     return flags
 
+
 def get_compressor(path):
     global config
 
-    compressor = 'uncompressed'
-    for pattern, actions in config['filters'].items():
+    compressor = "uncompressed"
+    for pattern, actions in config["filters"].items():
         if fnmatch(path, pattern):
             for action in actions:
-                if action in ('gzip', 'heatshrink', 'uncompressed'):
+                if action in ("gzip", "heatshrink", "uncompressed"):
                     compressor = action
     return compressor
 
+
 def load_state(dst_dir):
     state = dict()
-    state_file = os.path.join(dst_dir, '.state')
+    state_file = os.path.join(dst_dir, ".state")
     if os.path.exists(state_file):
-        with open(state_file, newline='') as f:
+        with open(state_file, newline="") as f:
             reader = csv.reader(f, quoting=csv.QUOTE_NONNUMERIC)
             for data in reader:
-                path, type, mtime, flags, preprocessors, compressor = data
+                path, type, mtime, flags, compressor = data
                 state[path] = {
-                    'type': type,
-                    'mtime': mtime,
-                    'preprocessors': () if not preprocessors else \
-                            tuple(preprocessors.split(',')),
-                    'flags': () if not flags else tuple(flags.split(',')),
-                    'compressor': compressor,
+                    "type": type,
+                    "mtime": mtime,
+                    "flags": () if not flags else tuple(flags.split(",")),
+                    "compressor": compressor,
                 }
     return state
 
+
 def save_state(dst_dir, state):
-    with open(os.path.join(dst_dir, '.state'), 'w', newline='') as f:
+    with open(os.path.join(dst_dir, ".state"), "w", newline="") as f:
         writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
         for path, data in state.items():
-            row = (path, data['type'], data['mtime'],
-                    ','.join(data['flags']),
-                    ','.join(data['preprocessors']),
-                    data['compressor'])
+            row = (
+                path,
+                data["type"],
+                data["mtime"],
+                ",".join(data["flags"]),
+                data["compressor"],
+            )
             writer.writerow(row)
 
     dotconfig = ConfigParser()
-    dotconfig['gzip'] = {
-        'level': config['compressors']['gzip']['level'],
+    dotconfig["gzip"] = {
+        "level": config["compressors"]["gzip"]["level"],
     }
-    dotconfig['heatshrink'] = {
-        'window_sz2': config['compressors']['heatshrink']['window_sz2'],
-        'lookahead_sz2': config['compressors']['heatshrink']['lookahead_sz2'],
+    dotconfig["heatshrink"] = {
+        "window_sz2": config["compressors"]["heatshrink"]["window_sz2"],
+        "lookahead_sz2": config["compressors"]["heatshrink"]["lookahead_sz2"],
     }
-    with open(os.path.join(dst_dir, '.config'), 'w') as f:
+    with open(os.path.join(dst_dir, ".config"), "w") as f:
         dotconfig.write(f)
+
 
 def build_state(src_dir):
     state = dict()
     for dir, _, files in os.walk(src_dir, followlinks=True):
-        reldir = os.path.relpath(dir, src_dir).replace('\\', '/').lstrip('.') \
-                .lstrip('/')
+        reldir = (
+            os.path.relpath(dir, src_dir).replace("\\", "/").lstrip(".").lstrip("/")
+        )
         absdir = os.path.abspath(dir)
         if reldir and os.path.exists(absdir):
             state[reldir] = {
-                'type': 'dir',
-                'mtime': os.path.getmtime(absdir),
-                'preprocessors': (),
-                'flags': (),
-                'compressor': 'uncompressed',
+                "type": "dir",
+                "mtime": os.path.getmtime(absdir),
+                "flags": (),
+                "compressor": "uncompressed",
             }
         for file in files:
-            relfile = os.path.join(reldir, file).replace('\\','/').lstrip('/')
+            relfile = os.path.join(reldir, file).replace("\\", "/").lstrip("/")
             absfile = os.path.join(absdir, file)
             if os.path.exists(absfile):
                 state[relfile] = {
-                    'type': 'file',
-                    'mtime': os.path.getmtime(absfile),
-                    'preprocessors': get_preprocessors(relfile),
-                    'flags': get_flags(relfile),
-                    'compressor': get_compressor(relfile),
+                    "type": "file",
+                    "mtime": os.path.getmtime(absfile),
+                    "flags": get_flags(relfile),
+                    "compressor": get_compressor(relfile),
                 }
     return state
 
-def install_preprocessors(config, root_dir):
-    global used_preprocessors
 
-    # Work around a bug in npm -- if `node_modules` doesn't exist it will
-    # create one at some random path above. Sometimes. Depending on the version.
-    # Except on Tuesdays in Norway.
-    node_modules = os.path.join(root_dir.replace('/', os.path.sep), 'node_modules')
-    if not os.path.exists(node_modules):
-        os.mkdir(node_modules)
-
-    for name in used_preprocessors:
-        preprocessor = config['preprocessors'][name]
-        if 'install' in preprocessor:
-            install = preprocessor['install']
-            subprocess.check_call(install, shell=True, cwd=root_dir)
-        elif 'npm' in preprocessor:
-            for npm in preprocessor['npm']:
-                test_path = os.path.join(root_dir.replace('/', os.path.sep),
-                                         'node_modules',
-                                         npm.replace('/', os.path.sep))
-                if not os.path.exists(test_path):
-                    subprocess.check_call(f'npm install {npm}', shell=True, cwd=root_dir)
-
-def preprocess(path, preprocessors):
+def copy(path):
     global config
 
     src_abs = os.path.join(args.src_dir, path)
@@ -248,36 +204,19 @@ def preprocess(path, preprocessors):
     else:
         os.makedirs(os.path.dirname(dst_abs), exist_ok=True)
 
-        with open(src_abs, 'rb') as f:
-            data = f.read()
+        with open(src_abs, "rb") as src:
+            with open(dst_abs, "wb") as dest:
+                dest.write(src.read())
 
-        if preprocessors:
-            print(f'       - preprocessing {path}', file=sys.stderr)
-
-        for preprocessor in preprocessors:
-            print(f'         - running {preprocessor}')
-            command = config['preprocessors'][preprocessor]['command']
-            if command[0].startswith('tools/'):
-                command[0] = os.path.join(script_dir, command[0][6:])
-            # These are implemented as `.cmd` files on Windows, which explicitly
-            # requires them to be run under `cmd /c`
-            if os.name == 'nt':
-                command = ["cmd", "/c"] + command
-            process = subprocess.Popen(command, stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE, shell=True)
-            data = process.communicate(input=data)[0]
-
-        with open(dst_abs, 'wb') as f:
-            f.write(data)
 
 def main():
     global args, config
 
     parser = ArgumentParser()
-    parser.add_argument('src_dir', metavar='SRC', help='source directory')
-    parser.add_argument('dst_dir', metavar='DST', help='destination directory')
-    parser.add_argument('--config', help='user configuration')
-    parser.add_argument('--root', metavar='ROOT', help='build root directory')
+    parser.add_argument("src_dir", metavar="SRC", help="source directory")
+    parser.add_argument("dst_dir", metavar="DST", help="destination directory")
+    parser.add_argument("--config", help="user configuration")
+    parser.add_argument("--root", metavar="ROOT", help="build root directory")
     args = parser.parse_args()
 
     load_config(args.config)
@@ -286,7 +225,6 @@ def main():
     new_state = build_state(args.src_dir)
 
     print(f"Root: {args.root}")
-    install_preprocessors(config, args.root)
 
     old_paths = set(old_state.keys())
     new_paths = set(new_state.keys())
@@ -307,14 +245,14 @@ def main():
                 os.unlink(dst_abs)
 
     for path in copy_paths:
-        preprocess(path, new_state[path]['preprocessors'])
+        copy(path)
 
     changes = bool(delete_paths or copy_paths)
     for path in compare_paths:
-        if old_state[path]['type'] != new_state[path]['type'] or \
-                old_state[path]['preprocessors'] != \
-                        new_state[path]['preprocessors'] or \
-                old_state[path]['mtime'] < new_state[path]['mtime']:
+        if (
+            old_state[path]["type"] != new_state[path]["type"]
+            or old_state[path]["mtime"] < new_state[path]["mtime"]
+        ):
 
             changes = True
 
@@ -326,10 +264,11 @@ def main():
                 else:
                     os.unlink(dst_abs)
 
-            preprocess(path, new_state[path]['preprocessors'])
+            copy(path)
 
     if changes:
         save_state(args.dst_dir, new_state)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
