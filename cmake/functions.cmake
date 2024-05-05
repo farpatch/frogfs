@@ -41,7 +41,7 @@ function(target_add_frogfs target path)
         COMMAND ${CMAKE_COMMAND} -E make_directory ${output}
         COMMAND ${Python3_VENV} ${frogfs_DIR}/tools/preprocess.py ${config_json} --root ${PROJECT_BINARY_DIR}/CMakeFiles ${CMAKE_CURRENT_SOURCE_DIR}/${path} ${output}
         DEPENDS ${PROJECT_BINARY_DIR}/CMakeFiles/venv ${PROJECT_BINARY_DIR}/CMakeFiles/venv_requirements.stamp ${ARG_CONFIG}
-        BYPRODUCTS ${PROJECT_BINARY_DIR}/CMakeFiles/node_modules ${output} ${output}/.state ${output}/.config
+        BYPRODUCTS ${output} ${output}/.state ${output}/.config
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/CMakeFiles
         COMMENT "Preprocessing ${ARG_NAME} files for ${target}"
         VERBATIM
@@ -80,7 +80,7 @@ function(declare_frogfs_bin path)
         COMMAND ${CMAKE_COMMAND} -E make_directory ${output}
         COMMAND ${Python3_VENV} ${frogfs_DIR}/tools/preprocess.py ${config_json} --root ${PROJECT_BINARY_DIR}/CmakeFiles ${CMAKE_CURRENT_SOURCE_DIR}/${path} ${output}
         DEPENDS ${PROJECT_BINARY_DIR}/CMakeFiles/venv ${PROJECT_BINARY_DIR}/CMakeFiles/venv_requirements.stamp ${ARG_CONFIG}
-        BYPRODUCTS ${PROJECT_BINARY_DIR}/CMakeFiles/node_modules ${output} ${output}/.state ${output}/.config
+        BYPRODUCTS ${output} ${output}/.state ${output}/.config
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/CMakeFiles
         COMMENT "Preprocessing ${ARG_NAME} files"
         VERBATIM

@@ -40,7 +40,7 @@ def load_config(user_config_file=None):
                 else:
                     if sec_name == "filters":
                         if subsec_name not in config[sec_name]:
-                            config[sec_name] = []
+                            config[sec_name][subsec_name] = []
                         if isinstance(config[sec_name][subsec_name], str):
                             config[sec_name][subsec_name] = [
                                 config[sec_name][subsec_name]
