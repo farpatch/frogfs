@@ -113,13 +113,12 @@ def get_flags(path):
 def get_compressor(path):
     global config
 
-    compressor = "uncompressed"
     for pattern, actions in config["filters"].items():
         if fnmatch(path, pattern):
             for action in actions:
                 if action in ("gzip", "heatshrink", "uncompressed"):
-                    compressor = action
-    return compressor
+                    return action
+    return "uncompressed"
 
 
 def load_state(dst_dir):
